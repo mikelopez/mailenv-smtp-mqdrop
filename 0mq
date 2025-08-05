@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+import time
+import zmq
+import sys
+import os
+import json
+
+
+HOST_PATH = "smtp-host-84756"
+
+def main():
+    # Read bind IP from SMTPHOST file
+    if not HOST_PATH:
+        print("❌ HOST_PATH is not set")
+        sys.exit(1)
+
+    if not os.path.exists(f"/app/mailenv-data/{HOST_PATH}/host-environments.json"):
+        print("❌ host-environments.json not found")
+        host_environments = {}
+        # sys.exit(1)
+    else:
+        with open(f"/app/mailenv-data/{HOST_PATH}/host-environments.json", "r") as f:
+            host_environments = json.load(f)
+            print(f"✅ host-environments.json loaded: {host_environments}")
+
+    
+    port = 9010
+    bind_ip = "*"
+    
+    print(f"🚀 Starting Mailenv SMTP MQ server on {bind_ip}:{port}")
+    
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+
+    #bind_ip = f"{bind_ip.replace('-host-', '')}.mailenv.com"
+    socket.bind(f"tcp://{bind_ip}:{port}")
+    
+    mount_dir = f"/app/mailenv-data/{HOST_PATH}"
+    
+    print(f"✅ Mailenv SMTP MQ server bound to tcp://{bind_ip}:{port}")
+    print(f"📁 Using mount directory: {mount_dir}")
+    print("🔍 Waiting for messages...")
+    
+    try:
+        while True:
+            # Wait for next request from client
+            message = socket.recv()
+            print(f"📨 Received request: {message}")
+            
+            # Do some 'work'
+            # time.sleep(1)
+            try:
+                payload = json.loads(message)
+                try:
+                    _env = host_environments[payload['smtp-env']]
+                except KeyError:
+                    print(f"❌ Invalid SMTP Env: {payload['smtp-env']}")
+                    socket.send(b"error")
+                    continue
+
+                
+                # print(f"📤 Received payload: {payload}")
+                # Use same pattern as run-dev.sh: mount_dir/environment_name
+                _maildrop = f"{mount_dir}/{payload['smtp-env']}/mail"
+                if not os.path.exists(_maildrop):
+                    print(f"❌ Invalid Path: {_maildrop}")
+                else:
+                    with open(f"{_maildrop}/{payload['message_id']}", "w") as f:
+                        f.write(json.dumps(payload))
+
+                    socket.send(b"ok")
+                    print("📤 ok")
+
+            except json.JSONDecodeError:
+                print(f"❌ Invalid JSON: {message}")
+                socket.send(b"error")
+                continue
+    except KeyboardInterrupt:
+        print(f"\n🛑 Shutting down Mailenv SMTP MQ server for host {HOST_PATH}...")
+    finally:
+        socket.close()
+        context.term()
+
+
+if __name__ == "__main__":
+    main() 
