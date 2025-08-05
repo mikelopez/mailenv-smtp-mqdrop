@@ -43,6 +43,33 @@ func main() {
 	log.Printf("🚀 Mailenv SMTP MQ server bound to %s", bindAddr)
 	log.Printf("📁 Using mount directory: %s", mountDir)
 
+	// Function to process a single payload
+	processPayload := func(p map[string]interface{}) bool {
+		envKey, ok := p["smtp-env"].(string)
+		if !ok || hostEnvironments[envKey] == nil {
+			log.Printf("❌ Invalid SMTP Env: %v", envKey)
+			return false
+		}
+
+		maildrop := filepath.Join(mountDir, envKey, "mail")
+		if _, err := os.Stat(maildrop); os.IsNotExist(err) {
+			log.Printf("❌ Invalid Path: %s", maildrop)
+			return false
+		}
+
+		msgID, _ := p["message_id"].(string)
+		filePath := filepath.Join(maildrop, msgID)
+
+		fileData, _ := json.Marshal(p)
+		if err := os.WriteFile(filePath, fileData, 0644); err != nil {
+			log.Printf("❌ Failed to write file: %v", err)
+			return false
+		}
+
+		log.Println("📤 ok")
+		return true
+	}
+
 	for {
 		msg, err := socket.Recv(0)
 		if err != nil {
@@ -52,36 +79,37 @@ func main() {
 
 		log.Println("📨 Received request")
 
-		var payload map[string]interface{}
-		if err := json.Unmarshal([]byte(msg), &payload); err != nil {
+		var raw interface{}
+		if err := json.Unmarshal([]byte(msg), &raw); err != nil {
 			log.Printf("❌ Invalid JSON: %v", err)
 			socket.Send("error", 0)
 			continue
 		}
 
-		envKey, ok := payload["smtp-env"].(string)
-		if !ok || hostEnvironments[envKey] == nil {
-			log.Printf("❌ Invalid SMTP Env: %v", envKey)
+		successCount := 0
+
+		switch v := raw.(type) {
+		case map[string]interface{}:
+			if processPayload(v) {
+				successCount++
+			}
+		case []interface{}:
+			for _, item := range v {
+				if p, ok := item.(map[string]interface{}); ok {
+					if processPayload(p) {
+						successCount++
+					}
+				} else {
+					log.Printf("⚠️ Skipping non-object item: %v", item)
+				}
+			}
+		default:
+			log.Printf("❌ Unexpected JSON type: %T", v)
 			socket.Send("error", 0)
 			continue
 		}
 
-		maildrop := filepath.Join(mountDir, envKey, "mail")
-		if _, err := os.Stat(maildrop); os.IsNotExist(err) {
-			log.Printf("❌ Invalid Path: %s", maildrop)
-		} else {
-			msgID, _ := payload["message_id"].(string)
-			filePath := filepath.Join(maildrop, msgID)
-
-			fileData, _ := json.Marshal(payload)
-			err = os.WriteFile(filePath, fileData, 0644)
-			if err != nil {
-				log.Printf("❌ Failed to write file: %v", err)
-				socket.Send("error", 0)
-				continue
-			}
-			socket.Send("ok", 0)
-			log.Println("📤 ok")
-		}
+		resp := fmt.Sprintf("ok (%d processed)", successCount)
+		socket.Send(resp, 0)
 	}
 }
