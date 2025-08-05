@@ -44,10 +44,13 @@ def main():
         while True:
             # Wait for next request from client
             message = socket.recv()
-            print(f"📨 Received request: {message}")
+            print(f"📨 Received request")
+
+            """
+            {"from": "test@mailenv.com", "to": "test@mailenv.com", "subject": "Test email", "body": "This is a test email", "smtp-env": "smtp-255733", "message_id": "msgid-1234567890abcdef", "thread_id": "thread-abcdef1234567890", "user_id": "user-9876543210", "account_id": "acct-1122334455", "transaction_id": "txn-9988776655", "campaign_id": "camp-5566778899", "mailing_list_id": "mlist-4433221100", "customer_id": "cust-1234abcd5678efgh", "organization_id": "org-8765wxyz4321lmno", "timestamp": "2024-06-01T12:34:56Z", "priority": "normal", "attachments": [{"filename": "test.pdf", "id": "att-001", "size": 123456}, {"filename": "image.png", "id": "att-002", "size": 654321}], "headers": {"X-Mailenv-Tracking": "track-abc123", "X-Fake-Header": "fake-value"}, "flags": ["bulk", "test", "automated"], "ip_address": "192.0.2.123", "server_id": "srv-0001", "session_id": "sess-abcdef123456", "random_token": "tok-xyz987654321", "extra_data": {"foo": "bar", "baz": 42, "qux": [1, 2, 3]}}'
+            """
             
-            # Do some 'work'
-            # time.sleep(1)
+            
             try:
                 payload = json.loads(message)
                 try:
@@ -75,7 +78,7 @@ def main():
                 socket.send(b"error")
                 continue
     except KeyboardInterrupt:
-        print(f"\n🛑 Shutting down Mailenv SMTP MQ server for host {HOST_PATH}...")
+        print(f"\n🛑 Shutting down Mailenv SMTP MQ server for host...")
     finally:
         socket.close()
         context.term()
