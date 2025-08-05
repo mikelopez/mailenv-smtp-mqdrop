@@ -9,35 +9,9 @@ import json
 
 def main():
     # Read host from SMTPHOST file and transform it
-    try:
-        with open('SMTPHOST', 'r') as f:
-            smtp_host = f.read().strip()
-        
-        if not smtp_host:
-            print("❌ SMTPHOST file is empty")
-            sys.exit(1)
-        
-        # Transform hostname: smtp-host-84756 -> smtp84756.mailenv.com
-        if 'smtp-host-' in smtp_host:
-            host_number = smtp_host.split('smtp-host-')[1]
-            server_ip = f"smtp{host_number}.mailenv.com"
-        else:
-            server_ip = smtp_host
-            
-    except FileNotFoundError:
-        print("❌ SMTPHOST file not found")
-        sys.exit(1)
+    server_ip = "18.191.211.54"
+    server_port = 9210
     
-    # Read port from environment variable
-    try:
-        with open('SMTPHOST_MQ_PORT', 'r') as f:
-            server_port = f.read().strip()
-        if not server_port:
-            print("❌ SMTPHOST_MQ_PORT file is empty")
-            sys.exit(1)
-    except FileNotFoundError:
-        print("❌ SMTPHOST_MQ_PORT file not found")
-        sys.exit(1)
 
     
     connection_string = f"tcp://{server_ip}:{server_port}"
@@ -95,7 +69,7 @@ def main():
     }
     
     # Do 10 requests, waiting each time for a response
-    for request in range(10):
+    for request in range(100):
         print(f"📤 Sending request {request}...")
         socket.send(json.dumps(payload).encode('utf-8'))
         
@@ -111,7 +85,8 @@ def main():
     print("✅ All requests completed!")
     print(f"⏰ End time: {end_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"⏱️ Total duration: {duration:.2f} seconds")
-    print(f"📊 Requests per second: {1000/duration:.2f} req/sec")
+    
+    print(f"📊 Requests per second: {100/duration:.2f} req/sec")
     
     # Clean up
     socket.close()
