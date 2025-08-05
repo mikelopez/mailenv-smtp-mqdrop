@@ -7,20 +7,18 @@ import os
 import json
 
 
-HOST_PATH = "smtp-host-84756"
+
 
 def main():
     # Read bind IP from SMTPHOST file
-    if not HOST_PATH:
-        print("❌ HOST_PATH is not set")
-        sys.exit(1)
+    
 
-    if not os.path.exists(f"/app/mailenv-data/{HOST_PATH}/host-environments.json"):
+    if not os.path.exists(f"/app/mailenv-data/host-environments.json"):
         print("❌ host-environments.json not found")
         host_environments = {}
         # sys.exit(1)
     else:
-        with open(f"/app/mailenv-data/{HOST_PATH}/host-environments.json", "r") as f:
+        with open(f"/app/mailenv-data/host-environments.json", "r") as f:
             host_environments = json.load(f)
             print(f"✅ host-environments.json loaded: {host_environments}")
 
@@ -36,7 +34,7 @@ def main():
     #bind_ip = f"{bind_ip.replace('-host-', '')}.mailenv.com"
     socket.bind(f"tcp://{bind_ip}:{port}")
     
-    mount_dir = f"/app/mailenv-data/{HOST_PATH}"
+    mount_dir = f"/app/mailenv-data"
     
     print(f"✅ Mailenv SMTP MQ server bound to tcp://{bind_ip}:{port}")
     print(f"📁 Using mount directory: {mount_dir}")
