@@ -10,8 +10,12 @@ import json
 def main():
     # Read host from SMTPHOST file and transform it
     server_ip = "18.191.211.54"
+    server_ip = "localhost"
     server_port = 9210
-    
+
+    TOTAL_REQUESTS = 100
+    BATCH_SIZE = 10
+    NUM_BATCHES = TOTAL_REQUESTS // BATCH_SIZE
 
     
     connection_string = f"tcp://{server_ip}:{server_port}"
@@ -29,7 +33,7 @@ def main():
     socket.connect(connection_string)
     
     print("✅ Connected to server")
-    print("📤 Sending 10 requests...")
+    print(f"📤 Sending {NUM_BATCHES} batches of {BATCH_SIZE} messages each...")
 
     payload = {
         "from": "test@mailenv.com",
@@ -68,25 +72,35 @@ def main():
         }
     }
     
-    # Do 10 requests, waiting each time for a response
-    for request in range(100):
-        print(f"📤 Sending request {request}...")
-        socket.send(json.dumps(payload).encode('utf-8'))
+    # Create batches of 10 messages
+    for batch in range(NUM_BATCHES):
+        # Create a batch by appending payload 10 times
+        batch_payload = []
+        for i in range(BATCH_SIZE):
+            # Create a copy of the payload with unique message_id for each message
+            message_payload = payload.copy()
+            message_payload["message_id"] = f"msgid-{batch}-{i}-{int(time.time())}"
+            batch_payload.append(message_payload)
+        
+        print(f"📤 Sending batch {batch + 1}/{NUM_BATCHES} with {BATCH_SIZE} messages...")
+        socket.send(json.dumps(batch_payload).encode('utf-8'))
         
         # Get the reply
         message = socket.recv()
-        print(f"📥 Received reply {request} [ {message} ]")
+        print(f"📥 Received reply for batch {batch + 1} [ {message} ]")
     
     # Record end time
     end_time = time.time()
     end_datetime = datetime.now()
     duration = end_time - start_time
     
-    print("✅ All requests completed!")
+    print("✅ All batches completed!")
     print(f"⏰ End time: {end_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"⏱️ Total duration: {duration:.2f} seconds")
-    
-    print(f"📊 Requests per second: {100/duration:.2f} req/sec")
+    print(f"📊 Total messages sent: {TOTAL_REQUESTS}")
+    print(f"📊 Batches sent: {NUM_BATCHES}")
+    print(f"📊 Messages per batch: {BATCH_SIZE}")
+    print(f"📊 Messages per second: {TOTAL_REQUESTS/duration:.2f} msg/sec")
     
     # Clean up
     socket.close()
