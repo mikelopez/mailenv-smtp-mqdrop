@@ -34,7 +34,7 @@ def main():
     
     
     # Do 10 requests, waiting each time for a response
-    for request in range(10):
+    for request in range(100):
         payload = {
             "from": "test@mailenv.com",
             "to": "test@mailenv.com",

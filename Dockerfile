@@ -1,25 +1,33 @@
-FROM python:3.9-slim
+# Stage 1: Build
+FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache zeromq-dev gcc g++ musl-dev
 
-RUN apt-get update && apt-get install -y cron
+# Create go.mod inside container if missing
+RUN go mod init mailenv-smtp-mqdrop || true
+
+# Copy source
+COPY . .
+
+# Ensure dependencies are fetched
+RUN go mod tidy
 
 
+RUN go build -o mqdrop .
 
+# Stage 2: Runtime
+FROM alpine:3.19
 
-# Copy all MTA files
-COPY 0mq .
-COPY test-0mq.py .
-COPY requirements.txt .
+WORKDIR /app
 
-# COPY transport_map_sample.json .
+RUN apk add --no-cache zeromq
 
+COPY --from=builder /app/mqdrop .
+
+RUN mkdir -p /app/mailenv-data
 COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh 
+RUN chmod +x entrypoint.sh
 
-# Ensure cron.log exists and is writable
-RUN touch /var/log/mailenv.log && chmod 666 /var/log/mailenv.log
-
-#CMD ["/bin/bash"]
-CMD ["/app/entrypoint.sh"] 
+CMD ["/app/entrypoint.sh"]

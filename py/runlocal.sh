@@ -22,10 +22,9 @@ fi
 
 IMAGE_NAME="mailenv-smtp-mqdrop:localdev"
 
-
-#docker build \
-#  --build-arg APPVER=localdev \
-#  -t ${IMAGE_NAME} .
+docker build \
+  --build-arg APPVER=localdev \
+  -t ${IMAGE_NAME} .
 
 # Stop + remove old containers
 CONTAINERS=$(docker ps -a | grep mailenv-smtp-mqdrop | awk '{print $1}' || true)
