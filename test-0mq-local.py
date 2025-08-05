@@ -10,7 +10,7 @@ import json
 def main():
     # Read host from SMTPHOST file and transform it
     server_ip = "localhost"
-    server_port = 9010
+    server_port = 9210
     
     
     
