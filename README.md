@@ -1,1 +1,1 @@
-eromw instance, runs on smtp-hosts as a container which basically listens on port 9707, accepts a JSON, parses it and places the message in the appropriate folder according to smtp-environment destination.
+eromw instance, runs on smtp-hosts as a container which basically listens on port 9010, accepts a JSON, parses it and places the message in the appropriate folder according to smtp-environment destination.

@@ -1,0 +1,48 @@
+version: '3.9'
+
+networks:
+  mailenv-smtp-net-local:
+    driver: bridge
+
+services:
+  mailenv-smtp-mqdrop-local:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    container_name: mailenv-smtp-mqdrop-local
+    ports:
+      - 9010:9010
+    volumes:
+      - /Users/mikelopez/Desktop/dev/mailenv-docker-mounts/mailenv-smtp:/app/mailenv-data
+    environment:
+      - RUN_PORT=9010
+      - MOUNT_PATH=/app/mailenv-data
+      - LOCAL_ENV=1
+      - HOST_PATH=smtp-host-84756
+    networks:
+      - mailenv-smtp-net-local
+
+  mailenv-smtp-mqdrop-localwin:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    container_name: mailenv-smtp-mqdrop-localwin
+    ports:
+      - 9010:9010
+    volumes:
+      - c:/mailenv-docker-mounts/mailenv-smtp:/app/mailenv-data
+    environment:
+      - RUN_PORT=9010
+      - MOUNT_PATH=/app/mailenv-data
+      - LOCAL_ENV=1
+      - HOST_PATH=smtp-host-84756
+    networks:
+      - mailenv-smtp-net-local
